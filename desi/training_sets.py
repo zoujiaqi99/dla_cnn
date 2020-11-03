@@ -49,6 +49,48 @@ def split_sightline_into_samples(sightline, REST_RANGE=REST_RANGE, kernel=kernel
     # Return
     return fluxes_matrix, sightline.classification[cut], sightline.offsets[cut], sightline.column_density[cut],lam_matrix
 
+# Returns indexes of pos & neg samples that are 50% positive and 50% negative and no boarder
+from dla_cnn.desi.defs import kernel
+def select_samples_50p_pos_neg(sightline,kernel=kernel):
+    """
+    For a given sightline, generate the indices for DLAs and for without
+    Split 50/50 to have equal representation
+    Parameters
+    ----------
+    classification: np.ndarray
+        Array of classification values.  1=DLA; 0=Not; -1=not analyzed
+    Returns
+    -------
+    idx: np.ndarray
+        positive + negative indices
+    """
+    #classification = data[1]
+    lam, lam_rest, ix_dla_range = get_lam_data(sightline.loglam, sightline.z_qso)
+    kernelrangepx = int(kernel/2)
+    cut=((np.nonzero(ix_dla_range)[0])>=kernelrangepx)&((np.nonzero(ix_dla_range)[0])<=(len(lam)-kernelrangepx-1))
+    newclassification=sightline.classification[cut]
+    num_pos = np.sum(newclassification==1, dtype=np.float64)
+    num_neg = np.sum(newclassification==0, dtype=np.float64)
+    n_samples = int(min(num_pos, num_neg))
+
+    r = np.random.permutation(len(newclassification))
+
+    pos_ixs = r[newclassification[r]==1][0:n_samples]
+    neg_ixs = r[newclassification[r]==0][0:n_samples]
+    # num_total = data[0].shape[0]
+    # ratio_neg = num_pos / num_neg
+
+    # pos_mask = classification == 1      # Take all positive samples
+
+    # neg_ixs_by_ratio = np.linspace(1,num_total-1,round(ratio_neg*num_total), dtype=np.int32) # get all samples by ratio
+    # neg_mask = np.zeros((num_total),dtype=np.bool) # create a 0 vector of negative samples
+    # neg_mask[neg_ixs_by_ratio] = True # set the vector to positives, selecting for the appropriate ratio across the whole sightline
+    # neg_mask[pos_mask] = False # remove previously positive samples from the set
+    # neg_mask[classification == -1] = False # remove border samples from the set, what remains is still in the right ratio
+
+    # return pos_mask | neg_mask
+    return np.hstack((pos_ixs,neg_ixs))
+    
 def prepare_training_test_set(ids_train, ids_test,
                                       train_save_file="../data/localize_train.npy",
                                       test_save_file="../data/localize_test.npy",

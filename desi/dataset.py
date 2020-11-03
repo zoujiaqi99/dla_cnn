@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.signal as signal
-from training_sets import split_sightline_into_samples 
-from preprocess import label_sightline
+from dla_cnn.desi.training_sets import split_sightline_into_samples 
+from dla_cnn.desi.preprocess import label_sightline
 from dla_cnn.spectra_utils import get_lam_data
 from dla_cnn.training_set import select_samples_50p_pos_neg
 

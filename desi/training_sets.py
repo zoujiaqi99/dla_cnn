@@ -36,19 +36,18 @@ def split_sightline_into_samples(sightline, REST_RANGE=REST_RANGE, kernel=kernel
     """
     lam, lam_rest, ix_dla_range = get_lam_data(sightline.loglam, sightline.z_qso, REST_RANGE)
     kernelrangepx = int(kernel/2) #200
-    #samplerangepx = int(kernel*pos_sample_kernel_percent/2) #60
+    #samplerangepx = int(kernel*pos_sample_kernel_percent/2) 
+    #consider boundaries
     cut=((np.nonzero(ix_dla_range)[0])>=kernelrangepx)&((np.nonzero(ix_dla_range)[0])<=(len(lam)-kernelrangepx-1))
      
     #ix_dlas = [(np.abs(lam[ix_dla_range]-dla.central_wavelength).argmin()) for dla in sightline.dlas]
     #coldensity_dlas = [dla.col_density for dla in sightline.dlas]       # column densities matching ix_dlas
 
-    # FLUXES - Produce a 1748x400 matrix of flux values
-    #fluxes_matrix = np.vstack(map(lambda x:x[0][x[1]-kernelrangepx:x[1]+kernelrangepx],zip(itertools.repeat(sightline.flux), np.nonzero(ix_dla_range)[0])))
+    # FLUXES - Produce a 400 matrix of flux values
     fluxes_matrix = np.vstack(map(lambda x:x[0][x[1]-kernelrangepx:x[1]+kernelrangepx],zip(itertools.repeat(sightline.flux), np.nonzero(ix_dla_range)[0][cut])))
     lam_matrix = np.vstack(map(lambda x:x[0][x[1]-kernelrangepx:x[1]+kernelrangepx],zip(itertools.repeat(lam), np.nonzero(ix_dla_range)[0][cut])))
     # Return
     return fluxes_matrix, sightline.classification[cut], sightline.offsets[cut], sightline.column_density[cut],lam_matrix
-    #return fluxes_matrix, sightline.classification, sightline.offsets, sightline.column_density
 
 def prepare_training_test_set(ids_train, ids_test,
                                       train_save_file="../data/localize_train.npy",

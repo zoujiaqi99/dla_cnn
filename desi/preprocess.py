@@ -18,12 +18,12 @@ from os import remove
 import csv
 
 # Set defined items
-#from dla_cnn.desi import defs
-#REST_RANGE = defs.REST_RANGE
-#kernel = defs.kernel
+from dla_cnn.desi import defs
+REST_RANGE = defs.REST_RANGE
+kernel = defs.kernel
 
 
-def label_sightline(sightline, kernel=400, REST_RANGE=[900,1316], pos_sample_kernel_percent=0.3):
+def label_sightline(sightline, kernel=kernel, REST_RANGE=REST_RANGE, pos_sample_kernel_percent=0.3):
     """
     Add labels to input sightline based on the DLAs along that sightline
 
@@ -173,7 +173,7 @@ def rebin(sightline, v):
 
 
 def normalize(sightline, full_wavelength, full_flux):
-    '''
+    """
     Normalize spectrum by dividing the mean value of continnum at lambda[left,right]
     ------------------------------------------
     parameters:
@@ -187,7 +187,7 @@ def normalize(sightline, full_wavelength, full_flux):
     
     sightline: the sightline after normalized
     
-    '''
+    """
     blue_limit = 1420
     red_limit = 1480
     rest_wavelength = full_wavelength/(sightline.z_qso+1)
@@ -225,30 +225,6 @@ def estimate_s2n(sightline):
     s2n = sightline.flux/sightline.error
     #return s/n
     return np.median(s2n[test])
-def estimate_dla_s2n(sightline):
-    """
-    Estimate the s/n of every DLA, using the lymann forest part and excluding dlas.
-    -------------------------------------------------------------------------------------
-    parameters；
-    sightline: class:`dla_cnn.data_model.sightline.Sightline` object, we use it to estimate the s/n,
-               and since we use the lymann forest part, the sightline's wavelength range should contain 1070~1170
-    --------------------------------------------------------------------------------------
-    return:
-    s/n : float, the s/n of the given sightline.
-    """
-    #determine the lymann forest part of this sightline
-    blue_limit = 1420
-    red_limit = 1480
-    wavelength = 10**sightline.loglam
-    rest_wavelength = wavelength/(sightline.z_qso+1)
-    test = (rest_wavelength>blue_limit)&(rest_wavelength<red_limit)
-    flux_median=np.median(sightline.flux[test])
-    for dla in sightline.dlas:
-        ix_dlas.append(np.abs(wavelength-dla.central_wavelength).argmin())
-        error=np.std(sightline.flux[ix_dlas-60,ix_dla+60])
-        dla.s2n= flux_median/error
-    
-
 
 def generate_summary_table(sightlines, output_dir, mode = "w"):
     """

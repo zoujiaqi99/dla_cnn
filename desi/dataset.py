@@ -40,7 +40,7 @@ def make_datasets(sightlines,validate=True):
                 labels_offset=np.hstack([data_split[2][m] for m in sample_masks])
                 col_density=np.hstack([data_split[3][m] for m in sample_masks])
             dataset[sightline.id]={'FLUX':flux,'labels_classifier':labels_classifier,'labels_offset':labels_offset,'col_density': col_density}
-        return dataset
+    return dataset
         
 def smooth_flux(flux):
     """
@@ -100,3 +100,4 @@ def make_smoothdatasets(sightlines,validate=True):
                 col_density=np.hstack([data_split[3][m] for m in sample_masks])
                 flux_matrix=smooth_flux(flux)
                 dataset[sightline.id]={'FLUXMATRIX':flux_matrix,'labels_classifier':labels_classifier,'labels_offset':labels_offset,'col_density': col_density}
+    return dataset

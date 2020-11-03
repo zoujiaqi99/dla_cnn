@@ -1,11 +1,9 @@
-
 import numpy as np 
-#from dla_cnn.data_model.Sightline import Sightline
 from dla_cnn.data_model.Prediction import Prediction
 from dla_cnn.spectra_utils import get_lam_data
 import scipy.signal as signal
 def compute_peaks(sightline,PEAK_THRESH):
-                      # Threshold to accept a peak0.2
+    # Threshold to accept a peak0.2
     PEAK_SEPARATION_THRESH = 0.1        # Peaks must be separated by a valley at least this low
 
     # Translate relative offsets to histogram
@@ -56,17 +54,18 @@ def compute_peaks(sightline,PEAK_THRESH):
     return sightline
 
 def analyze_pred(sightline,pred,conf, offset, coldensity,PEAK_THRESH):
-    for i in range(0,len(pred)):#删去pred为0处的offset，防止影响offset hist的判断
-        if (pred[i]==0):#or(real_classifier[i]==-1):
+    for i in range(0,len(pred)):#exclude offset when pred=0
+        if (pred[i]==0):
             offset[i]=0
     sightline.prediction = Prediction(loc_pred=pred, loc_conf=conf, offsets=offset, density_data=coldensity)
+    # get prediction for each sightline
     compute_peaks(sightline,PEAK_THRESH)
     sightline.prediction.smoothed_loc_conf()
     lam, lam_rest, ix_dla_range = get_lam_data(sightline.loglam, sightline.z_qso)
     kernelrangepx = 200
-    cut=((np.nonzero(ix_dla_range)[0])>=kernelrangepx)&((np.nonzero(ix_dla_range)[0])<=(len(lam)-kernelrangepx-1))   
+    cut=((np.nonzero(ix_dla_range)[0])>=kernelrangepx)&((np.nonzero(ix_dla_range)[0])<=(len(lam)-kernelrangepx-1)) 
+    #get input lam array
     lam_analyse=lam[ix_dla_range][cut]
-    global dla_sub_lyb
     dla_sub_lyb=[]
     for peak in sightline.prediction.peaks_ixs:
         peak_lam_rest=lam_rest[ix_dla_range][cut][peak]
@@ -86,7 +85,6 @@ def analyze_pred(sightline,pred,conf, offset, coldensity,PEAK_THRESH):
             'column_density_bias_adjust': float(bias_correction),
             'type': absorber_type
         }
-        #get_s2n_for_absorbers(sightline, lam, [abs_dict])  # SLOWED CODE DOWN TOO MUCH
         dla_sub_lyb.append(abs_dict)
     return dla_sub_lyb
 

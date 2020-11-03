@@ -50,7 +50,6 @@ def split_sightline_into_samples(sightline, REST_RANGE=REST_RANGE, kernel=kernel
     return fluxes_matrix, sightline.classification[cut], sightline.offsets[cut], sightline.column_density[cut],lam_matrix
 
 # Returns indexes of pos & neg samples that are 50% positive and 50% negative and no boarder
-from dla_cnn.desi.defs import kernel
 def select_samples_50p_pos_neg(sightline,kernel=kernel):
     """
     For a given sightline, generate the indices for DLAs and for without

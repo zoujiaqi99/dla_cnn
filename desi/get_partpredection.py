@@ -6,7 +6,7 @@ Created on Sat Apr 18 20:40:41 2020
 @author: samwang
 """
 
-""" Methods for training the Model"""
+""" get the window prediction results and analyse"""
 #!python
 
 """
@@ -28,7 +28,7 @@ ops.reset_default_graph()
 #tf.compat.v1.disable_eager_execution()
 #init = tf.compat.v1.global_variables_initializer()
 
-from newmodel import build_model
+from model import build_model
 from tensorflow.compat.v1 import ConfigProto
 from tensorflow.compat.v1 import InteractiveSession
 
@@ -40,11 +40,11 @@ tensor_regex = re.compile('.*:\d*')
 def t(tensor_name):
     tensor_name = tensor_name+":0" if not tensor_regex.match(tensor_name) else tensor_name
     return tf.compat.v1.get_default_graph().get_tensor_by_name(tensor_name)
-
+#change the window wavelength to the whole sightline wavelength
 def generate_sightline(flux,lam):
     lam_sightline=[]
     flux_sightline=[]
-    partsnumber=len(lam)
+    partsnumber=len(lam)#how many windows are included
     for k in range(0,partsnumber-1):
         lam_sightline.append(lam[k][0])
         flux_sightline.append(flux[k][0])
@@ -54,9 +54,9 @@ def generate_sightline(flux,lam):
         flux_sightline.append(fluxs)
     lam_analyse=lam_sightline[199:-200]
     flux_analyse=flux_sightline[199:-200]
-    return lam_analyse , flux_analyse
+    return lam_analyse , flux_analyse #wavelength and flux for the whole sightline
 
-def get_dla(zabs,NHI,matrix_lam,matrix_flux,wvoff=60.):
+def get_dla(zabs,NHI,matrix_lam,matrix_flux,wvoff=60.): #using XSpectrum1D in linetools to draw the DLA
     spec = XSpectrum1D.from_tuple((matrix_lam,matrix_flux))
     if NHI<20.3:
         dla = LLSSystem((0,0), zabs, None, NHI=NHI)      
@@ -78,7 +78,7 @@ def predictions_ann(hyperparameters, flux, checkpoint_filename, TF_DEVICE=''):
     pred = np.zeros((n_samples,), dtype=np.float32)
     conf = np.copy(pred)
     offset = np.copy(pred)
-    coldensity = np.copy(pred)
+    coldensity = np.copy(pred) #set the 4 np matrix for every label
 
 
     with tf.Graph().as_default():
@@ -96,7 +96,7 @@ def predictions_ann(hyperparameters, flux, checkpoint_filename, TF_DEVICE=''):
           n_samples, BATCH_SIZE, timeit.default_timer() - timer))
 
     # coldensity_rescaled = coldensity * COL_DENSITY_STD + COL_DENSITY_MEAN
-    return pred, conf, offset, coldensity
+    return pred, conf, offset, coldensity #get the 4 labels prediction for every window
 
 
 # Called from train_ann to perform a test of the train or test data, needs to separate pos/neg to get accurate #'s
@@ -104,30 +104,6 @@ def predictions_ann(hyperparameters, flux, checkpoint_filename, TF_DEVICE=''):
 
 
 if __name__ == '__main__':
-    #
-    # Execute batch mode
-    #
-    #from Dataset import Dataset
-
-    DEFAULT_TRAINING_ITERS = 300000 #30000
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-s', '--hyperparamsearch', help='Run hyperparam search', required=False, action='store_true', default=False)
-    parser.add_argument('-o', '--output_file', help='Hyperparam csv result file location', required=False, default='../batch_results.csv')
-    parser.add_argument('-i', '--iterations', help='Number of training iterations', required=False, default=DEFAULT_TRAINING_ITERS)
-    parser.add_argument('-l', '--loadmodel', help='Specify a model name to load', required=False, default=None)
-    parser.add_argument('-c', '--checkpoint_file', help='Name of the checkpoint file to save (without file extension)', required=False, default="../models/train/current") #../models/training/current
-    parser.add_argument('-r', '--train_dataset_filename', help='File name of the training dataset without extension', required=False, default="../data/gensample/train_*.npz")
-    parser.add_argument('-e', '--test_dataset_filename', help='File name of the testing dataset without extension', required=False, default="../data/gensample/test_mix_23559.npz")
-    args = vars(parser.parse_args())
-
-    RUN_SINGLE_ITERATION = not args['hyperparamsearch']
-    checkpoint_filename = args['checkpoint_file'] if RUN_SINGLE_ITERATION else None
-    batch_results_file = args['output_file']
-    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.DEBUG)
-
-
-    exception_counter = 0
-    iteration_num = 0
 
     parameter_names = ["learning_rate", "training_iters", "batch_size", "l2_regularization_penalty", "dropout_keep_prob",
                        "fc1_n_neurons", "fc2_1_n_neurons", "fc2_2_n_neurons", "fc2_3_n_neurons",
@@ -196,9 +172,7 @@ if __name__ == '__main__':
     #r = np.random.permutation(1000)
 
     # Write out CSV header
-    os.remove(batch_results_file) if os.path.exists(batch_results_file) else None
-    with open(batch_results_file, "a") as csvoutput:
-        csvoutput.write("iteration_num,normalized_score,best_accuracy,last_accuracy,last_objective,best_offset_rmse,last_offset_rmse,best_coldensity_rmse,last_coldensity_rmse," + ",".join(parameter_names) + "\n")
+    
 
 
     #hyperparameters = [parameters[i][0] for i in range(len(parameters))]
@@ -206,10 +180,10 @@ if __name__ == '__main__':
     for k in range(0,len(parameter_names)):
         hyperparameters[parameter_names[k]] = parameters[k][0]
 
-    pred_dataset='/home/bwang/data/smoothtest/2461-snr3dataset.npy'
+    pred_dataset='/home/bwang/data/smoothtest/2461-snr3dataset.npy' #the prediction data file
     r=np.load(pred_dataset,allow_pickle = True,encoding='latin1').item()
 
-    checkpoint_filename='/home/bwang/smoothtrain/train_921/current_99999'
+    checkpoint_filename='/home/bwang/smoothtrain/train_921/current_99999' #model checkpoint_file (result from training)
 
     dataset={}
 
@@ -231,7 +205,7 @@ if __name__ == '__main__':
         (pred, conf, offset, coldensity)=predictions_ann(hyperparameters, flux, checkpoint_filename, TF_DEVICE='')
 
 
-        dataset[sight_id]={'pred':pred,'conf':conf,'offset': offset, 'coldensity':coldensity }
+        dataset[sight_id]={'pred':pred,'conf':conf,'offset': offset, 'coldensity':coldensity } #save the window prediction as npy file, use it to get sightline prediction later
 
         for p in range(0,len(pred)):
             if (r[sight_id]['labels_classifier'][p]==1) & (pred[p]==1):
@@ -250,6 +224,7 @@ if __name__ == '__main__':
                 NHI.append(0)
             else:
                 NHI.append(coldensity[j])
+        #set coldensity to 0 when there is no DLA in the window
         #print(len(coldensity))
         #print(NHI)
         #print(len(NHI))
@@ -262,8 +237,8 @@ if __name__ == '__main__':
             a_z=(r[sight_id]['lam'][p][int(wave_dla)]/1215.67)-1
             delta_z.append(zabs-a_z)
             #if (NHI[p]-r[sight_id]['col_density'][p] < 5) & (NHI[p]-r[sight_id]['col_density'][p] > -5):
-            if (pred[p]==1 ) & (r[sight_id]['labels_classifier'][p]==1):
-                delta_NHI.append(NHI[p]-r[sight_id]['col_density'][p])
+            #if (pred[p]==1 ) & (r[sight_id]['labels_classifier'][p]==1):
+            delta_NHI.append(NHI[p]-r[sight_id]['col_density'][p])
 
 
         print('%s is saved'%(sight_id))
@@ -299,15 +274,6 @@ if __name__ == '__main__':
     plt.tick_params(labelsize=14)
     plt.savefig('partpre/snrbin3/delta_z-bin3totalrealdla.png')
 
-    plt.figure(figsize=(10,10))
-    plt.title('stddev=%.3f median=%.3f'%(arr_std,arr_median),fontdict=None,loc='center',pad='20',fontsize=20,color='red')
-    plt.hist(delta_z,bins=50,density=False,edgecolor='black')
-    plt.ylabel('N',fontsize=20)
-    plt.xlabel('$\Delta$'+'z',fontsize=20)
-    plt.ylim(0,400000)
-    plt.xlim(-0.05,0.05)
-    plt.tick_params(labelsize=14)
-    plt.savefig('partpre/snrbin3/delta_z-bin3realdla.png')
 
     plt.figure(figsize=(10,10))
     plt.title('stddev=%.3f median=%.3f'%(arr_std_2,arr_mean_2),fontdict=None,loc='center',pad='20',fontsize=20,color='red')
@@ -319,15 +285,6 @@ if __name__ == '__main__':
     plt.tick_params(labelsize=18)
     plt.savefig('partpre/snrbin3/delta_NHI-bin3realdla-total.png')
 
-    plt.figure(figsize=(10,10))
-    plt.title('stddev=%.3f median=%.3f'%(arr_std_2,arr_mean_2),fontdict=None,loc='center',pad='20',fontsize=20,color='red')
-    plt.hist(delta_NHI,bins=100,density=False,edgecolor='black')
-    plt.xlim(-2,2)
-    #plt.ylim(0,10000)
-    plt.ylabel('N',fontsize=20)
-    plt.xlabel('$\Delta$'+'log${N_{\mathregular{HI}}}$',fontsize=20)
-    plt.tick_params(labelsize=18)
-    plt.savefig('partpre/snrbin3/delta_NHI-bin3realdla.png')
 
     print('samples of TP is %s'%(len(TP)))
     print('samples of TN is %s'%(len(TN)))

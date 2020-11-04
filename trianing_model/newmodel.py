@@ -6,6 +6,7 @@ Created on Thu Apr  2 22:22:42 2020
 @author: samwang
 """
 """ TensorFlow Models for DLA finder"""
+''' new model with smooth training, this method can improve the DLA claasification on low signal-to-noise '''
 
 """
 0.  Convert the model to TF 2.1
@@ -140,6 +141,7 @@ def build_model(hyperparameters):
     INPUT_SIZE = 600
     matrix_size=4
      #hyperparameters['INPUT_SIZE'] # the pixel of input image,need a new hyperparameter
+     #matrix_size:smoothed data input, change the input training data to 600*4 scale
     tfo = {}    # Tensorflow objects
 
 
@@ -169,7 +171,7 @@ def build_model(hyperparameters):
     keep_prob = tf.compat.v1.placeholder(tf.float32, name='keep_prob')
     global_step = tf.Variable(0, name='global_step', trainable=False)
 
-    x_4d = tf.reshape(x, [-1, INPUT_SIZE, 1,matrix_size])
+    x_4d = tf.reshape(x, [-1, INPUT_SIZE, 1,matrix_size]) #reshape the data size
     # First Convolutional Layer
     # Kernel size (16,1)
     # Stride (4,1)

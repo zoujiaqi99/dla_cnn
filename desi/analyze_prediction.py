@@ -80,7 +80,7 @@ def analyze_pred(sightline,pred,conf, offset, coldensity,PEAK_THRESH):
     
     Return
     ------------------
-    dla_sub_lyb:list of absorbers list for each sightline
+    dla_sub_lyb:list of absorbers dict for each sightline
     
     """
     for i in range(0,len(pred)):#exclude offset when pred=0

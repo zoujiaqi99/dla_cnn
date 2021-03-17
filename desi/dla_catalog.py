@@ -1,109 +1,51 @@
-from astropy.table import Table
+from astropy.table import Table, vstack
 from astropy.io import fits
-from pkg_resources import resource_filename
 import numpy as np
-def generate_qso_table(sightlines,pred_abs):
+def generate_qso_table(sightlines):
     """
     generate a QSO table for fitting BAO.
     
     Parameters
     ----------------
     sightlines: list of 'dla_cnn.data_model.Sightline.Sightline` object
-    pred_abs:dict, the predicted absorbers for each sightline
     
     Return
     ----------------
     qso_tbl: astropy.Table object
     
     """
-    a_plates=[]
-    a_fibers=[]
-    a_mjds=[]
-    a_ra=[]
-    a_dec=[]
-    a_zqso=[]
-    a_id=[]
-    qso_tbl=Table()
+    qso_tbl = Table(names=('Plate','FiberID','MJD','TARGET_RA','TARGET_DEC', 'ZQSO','TARGETID','S/N'),dtype=('str','str','str','float','float','float','int','float'),meta={'EXTNAME': 'QSOCAT'})
     for ii in range(0,len(sightlines)):
         sightline=sightlines[ii]
-        
-        a_plates.append(sightline.id)
-        a_fibers.append(sightline.id)
-        a_mjds.append(sightline.id)
-        a_ra.append(sightline.ra)
-        a_dec.append(sightline.dec)
-        a_zqso.append(sightline.z_qso)
-        a_id.append(sightline.id)
-    qso_tbl['Plate'] = a_plates
-    qso_tbl['FiberID'] = a_fibers
-    qso_tbl['MJD'] = a_mjds
-    qso_tbl['TARGET_RA'] = a_ra
-    qso_tbl['TARGET_DEC'] = a_dec
-    qso_tbl['ZQSO'] = a_zqso
-    qso_tbl['TARGETID'] = a_id
-    qso_tbl.meta={'EXTNAME': 'QSOCAT'}
+        qso_tbl.add_row((sightline.id,sightline.id,sightline.id,sightline.ra,sightline.dec,sightline.z_qso,sightline.id,sightline.s2n)
     return qso_tbl
-def generate_dla_table(sightlines,pred_abs):
+   
+def generate_real_table(sightlines):
     """
-    generate a DLA&sub-DLA table.
-    
+    generate a real DLA&sub-DLA table.
     Parameters
     ----------------
-    sightlines: list of 'dla_cnn.data_model.Sightline.Sightline` object
-    pred_abs:dict, the predicted absorbers for each sightline
+    sightlines: dla_cnn.data_model.Sightline object list
     
     Return
     ----------------
-    dla_tbl: astropy.Table object
-    
+    real_dla_tbl: astropy.Table object
     """
-    a_plates=[]
-    a_fibers=[]
-    a_mjds=[]
-    a_ra=[]
-    a_dec=[]
-    a_zqso=[]
-    a_zdla=[]
-    a_id=[]
-    a_dlaid=[]
-    a_nhi=[]
-    a_conf=[]
-    dla_tbl = Table()
+    real_dla_tbl = Table(names=('TARGET_RA','TARGET_DEC', 'ZQSO','Z','TARGETID','S/N','DLAID','NHI','DLA_CONFIDENCE','NHI_STD','ABSORBER_TYPE'),dtype=('float','float','float','float','int','str','float','float','float','float','str'),meta={'EXTNAME': 'DLACAT'})
     for ii in range(0,len(sightlines)):
         sightline=sightlines[ii]
-        if pred_abs[ii]!=[]:
-            for jj in range(0,len(pred_abs[ii])):
-                pred_ab=pred_abs[ii][jj]
-                a_plates.append(sightline.id)
-                a_fibers.append(sightline.id)
-                a_mjds.append(sightline.id)
-                a_ra.append(sightline.ra)
-                a_dec.append(sightline.dec)
-                a_zqso.append(sightline.z_qso)
-                a_id.append(sightline.id)
-                a_zdla.append(pred_ab['z_dla'])
-                a_nhi.append(pred_ab['column_density'])
-                a_dlaid.append(str(sightline.id)+'00'+str(jj))
-                a_conf.append(pred_ab['dla_confidence'])
-    dla_tbl['TARGET_RA'] = a_ra
-    dla_tbl['TARGET_DEC'] = a_dec
-    dla_tbl['ZQSO'] = a_zqso
-    dla_tbl['Z'] = a_zdla
-    dla_tbl['TARGETID'] = a_id
-    dla_tbl['DLAID'] = a_dlaid
-    dla_tbl['NHI'] = a_nhi
-    dla_tbl['DLA_CONFIDENCE']=a_conf
-    dla_tbl.meta={'EXTNAME': 'DLACAT'}
-    return dla_tbl
+        for dla in sightline.dlas:
+            absorber_type =  "DLA" if dla.col_density >= 20.3 else "SUBDLA"
+            real_dla_tbl.add_row((sightline.ra,sightline.dec,sightline.z_qso,float(dla.central_wavelength/1215.67-1),sightline.id,sightline.s2n,dla.id,float(dla.col_density),1.0,0.0,absorber_type))
+    return real_dla_tbl
     
-def catalog_fits(sightlines,pred_abs,dlafile=None,qsofile=None):
+def catalog_fits(sightlines,dlafile=None,qsofile=None):
     """
-    save DLA and QSO catalog.
+    save real DLA and QSO catalog.
     
     Parameters
     ----------------
     sightlines: list of 'dla_cnn.data_model.Sightline.Sightline` object
-    pred_abs:dict, the predicted absorbers for each sightline
     dlafile: str
     qsofile: str
     
@@ -112,7 +54,7 @@ def catalog_fits(sightlines,pred_abs,dlafile=None,qsofile=None):
     None
     
     """
-    dla_tbl=generate_dla_table(sightlines,pred_abs)
-    #qso_tbl=generate_qso_table(sightlines,pred_abs)
-    dla_tbl.write(dlafile,overwrite=True)
+    real_dla_tbl=generate_real_table(sightlines)
+    qso_tbl=generate_qso_table(sightlines)
+    real_dla_tbl.write(dlafile,overwrite=True)
     qso_tbl.write(qsofile,overwrite=True)

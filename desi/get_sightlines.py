@@ -1,11 +1,11 @@
 from dla_cnn.desi.preprocess import estimate_s2n,normalize,rebin
 from dla_cnn.desi.DesiMock import DesiMock
-from dla_cnn.desi.insert_dlas import insert_dlas
+#from dla_cnn.desi.insert_dlas import insert_dlas
 from dla_cnn.desi.defs import best_v
 import numpy as np
 import os
 from os.path import join
-def get_sightlines(path='/desi-0.2-100/spectra-16',insert=True):
+def get_sightlines(path='/desi-0.2-100/spectra-16'):
     """
     Insert DLAs manually into sightlines without DLAs or only choose sightlines with DLAs
     
@@ -30,25 +30,15 @@ def get_sightlines(path='/desi-0.2-100/spectra-16',insert=True):
             keys = list(specs.data.keys())
             for jj in keys:
                 sightline = specs.get_sightline(jj,camera = 'all', rebin=False, normalize=True)
-                if insert:
-                    #use sightline without DLAs to insert DLAs manually
-                    if (sightline.z_qso>=2.33)&(sightline.dlas==[]):
-                        sightline.s2n=estimate_s2n(sightline)
-                        #choose overlap or single
-                        insert_dlas(sightline,overlap=True, rstate=None, slls=False,
-                mix=True, high=False, noise=True)
+                #calculate S/N
+                sightline.s2n=estimate_s2n(sightline)
+                if (sightline.z_qso >= 2.33)&(sightline.s2n >= 1):#apply filtering
+                        #only use blue band data
                         sightline.flux = sightline.flux[0:sightline.split_point_br]
                         sightline.error = sightline.error[0:sightline.split_point_br]
                         sightline.loglam = sightline.loglam[0:sightline.split_point_br]
                         rebin(sightline, best_v['b'])
                         sightlines.append(sightline)
-                else:
-                    if (sightline.z_qso>=2.33)&(sightline.dlas!=[]):
-                        sightline.s2n=estimate_s2n(sightline)
-                        sightline.flux = sightline.flux[0:sightline.split_point_br]
-                        sightline.error = sightline.error[0:sightline.split_point_br]
-                        sightline.loglam = sightline.loglam[0:sightline.split_point_br]
-                        rebin(sightline, best_v['b'])
-                        sightlines.append(sightline)
+                
+    np.save('MOCK_spectra/processed/pre_sightlines.npy')
     return sightlines
-    

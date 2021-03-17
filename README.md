@@ -80,4 +80,4 @@ The `save_pred` module will generate a Fits file about the absorbers catalog for
 
 The `get_results` module is used to validate our model, we can compare the predictions with real absorbers (If we have the real absorber catalog), then generate the $\Delta z$ and $\Delta log(N_{HI})$ histogram and get a confusion matrix (true positive, true negative, false negative, false positive).
 
-Copyright (c) [2021] [Jiaqi Zou - zoujq20@mailstinghua.edu.cn]
+Copyright (c) [2021] [Jiaqi Zou - zoujq20@mails.tsinghua.edu.cn]

@@ -32,7 +32,7 @@ The next step is to use preprocessed sightlines to generate datasets as input to
 from dla_cnn.desi.dataset import make_datasets
 make_datasets(pre_sightlines,validate=True)
 ```
-It is worth noting that spectra with different S/N using different processing codes. For sightlines with S/N > 3, we only split sightlines into samples and input one-dimensional flux array into the model trained with high S/N sightlines. While for sightlines with S/N<3, we use three median filters to smooth flux and input four-dimensional flux matrix into the model trained with low S/N sightlines.
+It is worth noting that spectra with different S/N using different processing codes. For sightlines with S/N > 4, we only split sightlines into samples and input one-dimensional flux array into the model trained with high S/N sightlines. While for sightlines with S/N<4, we use three median filters to smooth flux and input four-dimensional flux matrix into the model trained with low S/N sightlines.
 
 This module will produce a npy file  in `MOCK_spectra/processed/input_datasets.npy`
 

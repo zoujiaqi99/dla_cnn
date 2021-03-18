@@ -5,34 +5,32 @@ from dla_cnn.spectra_utils import get_lam_data
 import matplotlib.pyplot as plt
 from linetools.spectra.xspectrum1d import XSpectrum1D
 from matplotlib.pyplot import MultipleLocator
-from pyigm.abssys.dla import DLASystem
-from pyigm.abssys.lls import LLSSystem
-from pyigm.abssys.utils import hi_model
 import scipy.signal as signal
 from dla_cnn.desi.analyze_prediction import analyze_pred
+from dla_cnn.desi.training_sets import split_sightline_into_samples
+from astropy.table import Table, vstack
 
-def save_pred(sightlines,pred,PEAK_THRESH,level):
+def save_pred(sightlines,pred,PEAK_THRESH,level,filename=None):
     """
-    convert  the parts prediction into whole sightline prediction.
+    Using prediction for windows to get prediction for sightlines, get a pred DLA catalog.
     
     Parameters
-    ------------------
-    sightlines: list of dla_cnn.data_model.Sightline object
-    pred:dict, model's output
-    PEAK_THRESH:float
-    level:float, if the conf of every pixel> level, the classification=1
-     
-    Return
-    ------------------
-    pred_abs:list of absorbers for given sightlines
+    ---------------
+    sightlines: data_model.Sightline object list
+    pred: dict
+    PEAK_THRESH: float
+    level: float
+    filename: str, use it to save DLA catalog
+    
+    Returns
+    ---------------
+    pred_abs: astropy.Table 
     
     """
-    pred_abs=[]
-    #get absorbers list for each sightline
+    pred_abs = Table(names=('TARGET_RA','TARGET_DEC', 'ZQSO','Z','TARGETID','S/N','DLAID','NHI','DLA_CONFIDENCE','NHI_STD','ABSORBER_TYPE'),dtype=('float','float','float','float','int','float','str','float','float','float','str'),meta={'EXTNAME': 'DLACAT'})
     for ii in range(0,len(sightlines)):
         sightline=sightlines[ii]
         conf=pred[sightline.id]['conf']
-        #using different conf level to change classifier value
         #classifier=[]
         #for ii in range(0,len(conf)):
             #if conf[ii]>level:
@@ -40,84 +38,86 @@ def save_pred(sightlines,pred,PEAK_THRESH,level):
             #else:
                 #classifier.append(0)
         #classifier=np.array(classifier)
-        #just use the given classifier
+        #real_classifier=real_claasifiers[ii]
         classifier=pred[sightline.id]['pred']
         offset=pred[sightline.id]['offset']
         coldensity=pred[sightline.id]['coldensity']
-        pred_abs.append(analyze_pred(sightline,classifier,conf,offset,coldensity,PEAK_THRESH))
+        pred_abs=vstack((pred_abs,analyze_pred(sightline,classifier,conf,offset,coldensity,PEAK_THRESH)))
+    pred_abs.write(filename,overwrite=True)
     return pred_abs
 
-def get_results(sightlines,pred):
+def label_catalog(real_catalog,pred_catalog,realname=None,dlaname=None):
     """
-    compare real absorbers and predicted absorbers and calculate TP,FN,FP, draw hist.
+    Compare real absorbers and predicted absorbers to add TP, FN, FP informations to DLA catalogs, calculate numbers of TP,FN,FP.
     
     Parameters
     ---------------
-    sightlines:list of dla_cnn.data_model.Sightline object
-    pred: list of absorbers for given sightlines, the output of save_pred module.
+    real_catalog:astropy.Table class 
+    pred_catalog:astropy.Table class
+    realname: str, use it to save the new real DLA catalog
+    predname: str, use it to save the new pred DLA catalog
     
-    Return
+    Reutrns
+    ----------------
+    tp_preds: list
+    fn_num: int
+    fp_num: int
+   
+    """
+    tp_pred=[]
+    fn_num=0
+    fp_num=0
+    pred_catalog.add_column('str',name='label')
+    pred_catalog.add_index('DLAID')
+    real_catalog.add_column('str',name='label')
+    for real_dla in real_catalog:
+        pred_dlas=pred_catalog[pred_catalog['TARGETID']==real_dla['TARGETID']]
+        central_wave=1215.67*(1+real_dla['Z'])
+        pred_wave=1215.67*(1+pred_dlas['Z'])
+        col_density=real_dla['NHI']
+        pred_coldensity=pred_dlas['NHI']
+        lam_difference=np.abs(pred_wave-central_wave)
+        if len(lam_difference) != 0:
+            nearest_ix = np.argmin(lam_difference) 
+            if (lam_difference[nearest_ix]<=10)&(pred_dlas[nearest_ix]['ABSORBER_TYPE']!='LYB')&(pred_dlas[nearest_ix]['label']=='str'):#距离小于10且不是lyb
+                real_dla['label']='tp'
+                dlaid=pred_dlas[nearest_ix]['DLAID']
+                pred_catalog.loc[dlaid]['label']='tp'
+                tp_pred.append([central_wave,col_density,pred_wave[nearest_ix],pred_coldensity[nearest_ix]])
+            else:
+                real_dla['label']='fn'
+                fn_num=fn_num+1
+        else:
+            real_dla['label']='fn'
+            fn_num=fn_num+1  
+    for pred_dla in pred_catalog:
+        if pred_dla['ABSORBER_TYPE']=='LYB':
+            pred_dla['label']='LYB'
+        else:
+            if pred_dla['label']=='str':
+                pred_dla['label']='fp'
+                fp_num=fp_num+1
+    
+    real_catalog.write(realname,overwrite=True)
+    pred_catalog.write(dlaname,overwrite=True)
+    return tp_pred, fn_num, fp_num
+
+def get_results(real_catalog,pred_catalog,realname=None,predname=None,path=None):
+    """
+    Compare real absorbers and predicted absorbers to add TP, FN, FP informations to DLA catalogs, calculate numbers of TP,FN,FP and draw histogram.
+    
+    Parameters
     ---------------
-    tp,fn,fp:the index of TP,FN,FP sightlines
-    fn_pred: the missing absorber's data: central wavelength and colomn density
-    fp_pred: the FP absorber's data:central wavelength and colomn density
+    real_catalog:astropy.Table class 
+    pred_catalog:astropy.Table class
+    realname: str, use it to save the new real DLA catalog
+    predname: str, use it to save the new pred DLA catalog
+    path: str, use it to save histograms.
     
     """
-    tp=[]
-    fp=[]
-    fn=[]
-    fp_pred=[]
-    tp_pred=[]
-    fn_pred=[]
-    for ii in range(0,len(sightlines)):
-        sightline=sightlines[ii]
-        pred_abs=pred[ii]
-      
-        central_wave=[]#pred wavelength
-        col_density=[]#pred nhi
-        real_wave=[]#real value
-        real_density=[]#real value      
-        if pred_abs!=[]:
-            for pred_ab in pred_abs:#get pred list
-                if (pred_ab['type']!='LYB'):#exclude lyb 
-                        central_wave.append(pred_ab['spectrum'])
-                        col_density.append(pred_ab['column_density'])
-                        
-            #find the tp,fn prediction corresponding to each real absorber
-            for dla in sightline.dlas:#get real list
-                #if (dla.central_wavelen:gth>=3800)&(dla.col_density>=20.0):
-                if dla.col_density>=19.3:
-                    real_wave.append(dla.central_wavelength)
-                    real_density.append(dla.col_density)
-                    lam_difference= np.abs(central_wave - dla.central_wavelength)
-                    nearest_ix = np.argmin(lam_difference)
-                    if lam_difference[nearest_ix]<=10:#delta lam<=10
-                        tp.append(ii)
-                        tp_pred.append([dla.central_wavelength,dla.col_density,central_wave[nearest_ix],col_density[nearest_ix]])   
-                    else:#missing absorber
-                        fn.append(ii)
-                        fn_pred.append([dla.central_wavelength,dla.col_density])
-                        
-            #find the wrong prediction without corresponding to each real absorber          
-            for i in range(0,len(central_wave)):
-                if real_wave!=[]:
-                     wave_difference=np.abs(np.array(real_wave) - central_wave[i])
-                     nearestix = np.argmin(wave_difference)
-                     if (wave_difference[nearestix]>15)&(col_density[i]>=19.3):#&(central_wave[i]<=1216*(1+sightline.z_qso)):
-                        fp.append(ii)
-                        fp_pred.append([central_wave[i],col_density[i]])
-                else:#sightline without absorbers
-                    fp.append(ii)
-                    fp_pred.append([central_wave[i],col_density[i]])
-                    
-        else:
-            for dla in sightline.dlas:
-                #if (dla.central_wavelength>=3800)&(dla.col_density>=20.0):
-                if dla.col_density>19.3:
-                    fn.append(ii)
-                    fn_pred.append([dla.central_wavelength,dla.col_density])
-                      
-    #draw NHI and z hist
+    tp_pred, fn_num, fp_num=label_catalog(real_catalog,pred_catalog,realname=realname,predname=predname)
+    print('true_positive=%s,false_negative=%s,false_positive=%s'%(len(tp_pred),fn_num,fp_num))
+    #draw hist
     delta_z=[]
     delta_NHI=[]
     for pred in tp_pred:
@@ -125,35 +125,26 @@ def get_results(sightlines,pred):
         real_z=pred[0]/1215.67-1
         delta_z.append(pred_z-real_z)
         delta_NHI.append(pred[3]-pred[1])
-    #calculate mean,std,variance
     arr_mean = np.mean(delta_z)
     arr_var = np.var(delta_z)
     arr_std = np.std(delta_z,ddof=1)
-    print("average:%f" % arr_mean)
-    print("fangcha:%f" % arr_var)
-    print("biaozhuncha:%f" % arr_std)
+
     arr_mean_2 = np.mean(delta_NHI)
     arr_var_2 = np.var(delta_NHI)
     arr_std_2 = np.std(delta_NHI,ddof=1)
-    print("average:%f" % arr_mean_2)
-    print("fangcha:%f" % arr_var_2)
-    print("biaozhuncha:%f" % arr_std_2)
-    
-    plt.figure(figsize=(5,5))
+    plt.figure(figsize=(10,10))
     plt.title('stddev=%.4f mean=%.5f'%(arr_std,arr_mean),fontdict=None,loc='center',pad='20',fontsize=20,color='red')
-    plt.hist(delta_z,bins=50,density=False,edgecolor='black')
+    plt.hist(delta_z,bins=50,density=False)#,edgecolor='black')
     plt.ylabel('N',fontsize=20)
     plt.xlabel('$\Delta$'+'z',fontsize=20)
     plt.tick_params(labelsize=18)
-    #plt.savefig('/Users/zjq/sightline/717/bin4delta_z.png')
+    #plt.savefig('%s/delta_z.pdf'%(path))
 
-    plt.figure(figsize=(5,5))
+    plt.figure(figsize=(10,10))
     plt.title('stddev=%.4f mean=%.5f'%(arr_std_2,arr_mean_2),fontdict=None,loc='center',pad='20',fontsize=20,color='red')
-    plt.hist(delta_NHI,bins=100,density=False,edgecolor='black')
+    plt.hist(delta_NHI,bins=100,density=False)#,edgecolor='black')
     plt.ylabel('N',fontsize=20)
     plt.xlabel('$\Delta$'+'log${N_{\mathregular{HI}}}$',fontsize=20)
     plt.tick_params(labelsize=18)
-    #plt.savefig('/Users/zjq/sightline/717/bin4delta_NHI.png')
-     
-    return tp,fn,fp,fn_pred,fp_pred
+    #plt.savefig('%s/delta_NHI.pdf'%(path))
 

@@ -1,10 +1,11 @@
-
 import numpy as np 
 #from dla_cnn.data_model.Sightline import Sightline
 from dla_cnn.data_model.Prediction import Prediction
 from dla_cnn.spectra_utils import get_lam_data
 from dla_cnn.desi.training_sets import split_sightline_into_samples
 import scipy.signal as signal
+from astropy.table import Table
+
 def compute_peaks(sightline,PEAK_THRESH):
                       # Threshold to accept a peak0.2
     PEAK_SEPARATION_THRESH = 0.1        # Peaks must be separated by a valley at least this low

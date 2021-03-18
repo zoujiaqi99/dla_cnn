@@ -58,3 +58,4 @@ def catalog_fits(sightlines,dlafile=None,qsofile=None):
     qso_tbl=generate_qso_table(sightlines)
     real_dla_tbl.write(dlafile,overwrite=True)
     qso_tbl.write(qsofile,overwrite=True)
+    return real_dla_tbl

@@ -66,19 +66,20 @@ This module will produce a npy file in the `MOCK_spectra/processed` directory co
 
 The last step is to transfer the prediction for windows into the prediction for the sightlines.
 We set the parameter about confidence level 1 and confidence level 2
-`conf1=0.5
-conf2=0.2`
+`level1=0.5
+level2=0.2`
 if the confidence level > 0.5, the pred for the window will be 1, if the offset peak of this pixel point > 0.2, there will be a DLA in this pixel.
 ```
 from dla_cnn.desi.pred_sightline import get_results,save_pred
+from dla_cnn.desi.dla_catalog import catalog_fits
 #get absorber list for each sightline
-pred_catalog=save_pred(va_sightlines,preds,level2,level1,filename='Mock_spectra/processed/pred_dla_catalog.fits')
+pred_catalog=save_pred(sightlines,preds,level2,level1,filename='Mock_spectra/processed/pred_dla_catalog.fits')
 #compare prediction with real absorbers,generate NHI,z hist and calculate confusion matrix
-catalog_fits(sightlines,dlafile='Mock_spectra/processed/real_dla_catalog.fits',qsofile='Mock_spectra/processed/qso_catalog.fits')
-tp,fn,fp,fn_pred,fp_pred=get_results(real_catalog,pred_catalog)
+real_catalog=catalog_fits(sightlines,dlafile='Mock_spectra/processed/real_dla_catalog.fits',qsofile='Mock_spectra/processed/qso_catalog.fits')
+get_results(real_catalog,pred_catalog,realname='Mock_spectra/processed/real_label_dla_catalog.fits',predname='Mock_spectra/processed/pred_label_dla_catalog.fits',path='Mock_spectra/processed')
 ```
 The `save_pred` module will generate a Fits file about the absorbers catalog for each sightline in the `MOCK_spectra/processed` directory.
 The `catalog_fits` module will generate the QSO catalog and real DLA catalog(using MOCK) in the `MOCK_spectra/processed` directory.
-The `get_results` module is used to validate our model, we can compare the predictions with real absorbers (If we have the real absorber catalog), then generate the $\Delta z$ and $\Delta log(N_{HI})$ histogram and get a confusion matrix (true positive, true negative, false negative, false positive).
+The `get_results` module is used to validate our model, we can compare the predictions with real absorbers (If we have the real absorber catalog), then generate the $\Delta z$ and $\Delta log(N_{HI})$ histogram and adding information about true positive, false negative, false positive to those two DLA catalogs.
 
 Copyright (c) [2021] [Jiaqi Zou - zoujq20@mails.tsinghua.edu.cn]

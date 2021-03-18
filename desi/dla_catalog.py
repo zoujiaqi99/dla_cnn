@@ -14,7 +14,7 @@ def generate_qso_table(sightlines):
     qso_tbl: astropy.Table object
     
     """
-    qso_tbl = Table(names=('Plate','FiberID','MJD','TARGET_RA','TARGET_DEC', 'ZQSO','TARGETID','S/N'),dtype=('str','str','str','float','float','float','int','float'),meta={'EXTNAME': 'QSOCAT'})
+    qso_tbl = Table(names=('Plate','FiberID','MJD','TARGET_RA','TARGET_DEC', 'ZQSO','TARGETID','S/N'),dtype=('int','int','int','float','float','float','int','float'),meta={'EXTNAME': 'QSOCAT'})
     for ii in range(0,len(sightlines)):
         sightline=sightlines[ii]
         qso_tbl.add_row((sightline.id,sightline.id,sightline.id,sightline.ra,sightline.dec,sightline.z_qso,sightline.id,sightline.s2n)
@@ -31,7 +31,7 @@ def generate_real_table(sightlines):
     ----------------
     real_dla_tbl: astropy.Table object
     """
-    real_dla_tbl = Table(names=('TARGET_RA','TARGET_DEC', 'ZQSO','Z','TARGETID','S/N','DLAID','NHI','DLA_CONFIDENCE','NHI_STD','ABSORBER_TYPE'),dtype=('float','float','float','float','int','str','float','float','float','float','str'),meta={'EXTNAME': 'DLACAT'})
+    real_dla_tbl = Table(names=('TARGET_RA','TARGET_DEC', 'ZQSO','Z','TARGETID','S/N','DLAID','NHI','DLA_CONFIDENCE','NHI_STD','ABSORBER_TYPE'),dtype=('float','float','float','float','int','float','str','float','float','float','str'),meta={'EXTNAME': 'DLACAT'})
     for ii in range(0,len(sightlines)):
         sightline=sightlines[ii]
         for dla in sightline.dlas:

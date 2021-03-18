@@ -56,42 +56,29 @@ def compute_peaks(sightline,PEAK_THRESH):
         #print(sightline.id,np.amax(smooth_conv_sum))
     return sightline
 
-def analyze_pred(sightline,pred,conf, offset, coldensity,PEAK_THRESH):
+  def analyze_pred(sightline,pred,conf, offset, coldensity,PEAK_THRESH):
     for i in range(0,len(pred)):#删去pred为0处的offset，防止影响offset hist的判断
         if (pred[i]==0):#or(real_classifier[i]==-1):
             offset[i]=0
     sightline.prediction = Prediction(loc_pred=pred, loc_conf=conf, offsets=offset, density_data=coldensity)
     compute_peaks(sightline,PEAK_THRESH)
     sightline.prediction.smoothed_loc_conf()
-    #lam, lam_rest, ix_dla_range = get_lam_data(sightline.loglam, sightline.z_qso)
-    #kernelrangepx = 200
-    #cut=((np.nonzero(ix_dla_range)[0])>=kernelrangepx)&((np.nonzero(ix_dla_range)[0])<=(len(lam)-kernelrangepx-1))
     data_split=split_sightline_into_samples(sightline)
     lam_analyse=data_split[5]
-    global dla_sub_lyb
-    dla_sub_lyb=[]
-    for peak in sightline.prediction.peaks_ixs:
+    
+    #generate absorbers catalog for every sightline
+    dla_tbl = Table(names=('TARGET_RA','TARGET_DEC', 'ZQSO','Z','TARGETID','S/N','DLAID','NHI','DLA_CONFIDENCE','NHI_STD','ABSORBER_TYPE'),dtype=('float','float','float','float','int','float','str','float','float','float','str'),meta={'EXTNAME': 'DLACAT'})
+    for jj in range(0,len(sightline.prediction.peaks_ixs)):
+        peak=sightline.prediction.peaks_ixs[jj]
         peak_lam_spectrum = lam_analyse[peak]
         z_dla = float(peak_lam_spectrum) / 1215.67 - 1
         peak_lam_rest=float(peak_lam_spectrum)/(1+sightline.z_qso)
         _, mean_col_density_prediction, std_col_density_prediction, bias_correction =             sightline.prediction.get_coldensity_for_peak(peak)
 
         absorber_type =  "DLA" if mean_col_density_prediction >= 20.3 else "LYB" if sightline.is_lyb(peak) else "SUBDLA"
+        dla_tbl.add_row((sightline.ra,sightline.dec,sightline.z_qso,float(z_dla),sightline.id,sightline.s2n,str(sightline.id)+'00'+str(jj),float(mean_col_density_prediction),min(1.0,float(sightline.prediction.offset_conv_sum[peak])),float(std_col_density_prediction),absorber_type))
         
-        abs_dict =  {
-            'rest': float(peak_lam_rest),
-            'spectrum': float(peak_lam_spectrum),
-            'z_dla':float(z_dla),
-            'dla_confidence': min(1.0,float(sightline.prediction.offset_conv_sum[peak])),
-            'column_density': float(mean_col_density_prediction),
-            'std_column_density': float(std_col_density_prediction),
-            'column_density_bias_adjust': float(bias_correction),
-            'type': absorber_type
-        }
-        #get_s2n_for_absorbers(sightline, lam, [abs_dict])  # SLOWED CODE DOWN TOO MUCH
-        dla_sub_lyb.append(abs_dict)
-    return dla_sub_lyb
-
+    return dla_tbl
 
 
 

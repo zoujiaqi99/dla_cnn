@@ -56,7 +56,7 @@ def compute_peaks(sightline,PEAK_THRESH):
         #print(sightline.id,np.amax(smooth_conv_sum))
     return sightline
 
-  def analyze_pred(sightline,pred,conf, offset, coldensity,PEAK_THRESH):
+def analyze_pred(sightline,pred,conf, offset, coldensity,PEAK_THRESH):
     for i in range(0,len(pred)):#删去pred为0处的offset，防止影响offset hist的判断
         if (pred[i]==0):#or(real_classifier[i]==-1):
             offset[i]=0

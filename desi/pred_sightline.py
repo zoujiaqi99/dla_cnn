@@ -46,7 +46,7 @@ def save_pred(sightlines,pred,PEAK_THRESH,level,filename=None):
     pred_abs.write(filename,overwrite=True)
     return pred_abs
 
-def label_catalog(real_catalog,pred_catalog,realname=None,dlaname=None):
+def label_catalog(real_catalog,pred_catalog,realname=None,predname=None):
     """
     Compare real absorbers and predicted absorbers to add TP, FN, FP informations to DLA catalogs, calculate numbers of TP,FN,FP.
     

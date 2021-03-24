@@ -3,5 +3,5 @@
 # Need to fill in TBD with the correct value
 #REST_RANGE = [920, 1214, "TBD"]
 REST_RANGE = [900, 1346, "TBD"]
-kernel = 400 # SDSS value -- UPDATE!!
+kernel = 400 # 600 smooth
 best_v = {'b': 62996, 'r': 44859, 'z': 34720}#the best value of rebining for each channel, its unit is m*s^(-1).

@@ -17,7 +17,7 @@ def generate_qso_table(sightlines):
     qso_tbl = Table(names=('Plate','FiberID','MJD','TARGET_RA','TARGET_DEC', 'ZQSO','TARGETID','S/N'),dtype=('int','int','int','float','float','float','int','float'),meta={'EXTNAME': 'QSOCAT'})
     for ii in range(0,len(sightlines)):
         sightline=sightlines[ii]
-        qso_tbl.add_row((sightline.id,sightline.id,sightline.id,sightline.ra,sightline.dec,sightline.z_qso,sightline.id,sightline.s2n)
+        qso_tbl.add_row(sightline.id,sightline.id,sightline.id,sightline.ra,sightline.dec,sightline.z_qso,sightline.id,sightline.s2n)
     return qso_tbl
    
 def generate_real_table(sightlines):

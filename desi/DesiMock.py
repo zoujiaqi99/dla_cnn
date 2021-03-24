@@ -48,7 +48,9 @@ class DesiMock:
         self.wavelength = np.hstack((spec[2].data.copy(), spec[7].data.copy(), spec[12].data.copy()))
         self.data_size = len(self.wavelength)
 
-        dlas_data = truth[3].data[truth[3].data.copy()['NHI']>19.3]
+        dlas_data_all = truth[3].data[truth[3].data.copy()['NHI']>19.3]
+        dlas_data=dlas_data_all[(dlas_data_all.copy()['Z_DLA']+1)*1215.67>3600]
+        #dlas_data = truth[3].data[truth[3].data.copy()['NHI']>19.3]
         spec_dlas = {}
         # item[2] is the spec_id, item[3] is the dla_id, and item[0] is NHI, item[1] is z_qso
         for item in dlas_data:

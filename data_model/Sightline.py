@@ -1,6 +1,6 @@
 import numpy as np
 from dla_cnn.spectra_utils import get_lam_data
-
+from dla_cnn.desi.training_sets import split_sightline_into_samples
 class Sightline(object):
 
     def __init__(self, id, ra=None,dec=None,dlas=None, flux=None, loglam=None,error=None, z_qso=None, split_point_br = None, split_point_rz = None,s2n = None,normalize = False):
@@ -77,10 +77,8 @@ class Sightline(object):
         """
         assert self.prediction is not None and peakix in self.prediction.peaks_ixs
 
-        lam, lam_rest, ix_dla_range = get_lam_data(self.loglam, self.z_qso)
-        kernelrangepx = 200
-        cut=((np.nonzero(ix_dla_range)[0])>=kernelrangepx)&((np.nonzero(ix_dla_range)[0])<=(len(lam)-kernelrangepx-1))   
-        lam_analyse=lam[ix_dla_range][cut]
+        data_split=split_sightline_into_samples(self)
+        lam_analyse=data_split[5]
         lambda_higher = (lam_analyse[peakix]) / (1025.722/1215.67)#找这个peak对应的dla
 
         # An array of how close each peak is to beign the ly-b of peakix in spectrum reference frame

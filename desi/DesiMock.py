@@ -127,8 +127,8 @@ class DesiMock:
         if camera == 'all':
             get_data()
             # this part is to deal with the overlapping part(only blue channel and the red channel)
-            blfbound = np.argwhere(self.wavelength == self.wavelength[self.split_point_br])[0][0]
-            rrgbound = np.argwhere(self.wavelength == self.wavelength[self.split_point_br-1])[1][0]
+            blfbound = np.argwhere(abs(self.wavelength - self.wavelength[self.split_point_br])<0.000001)[0][0]
+            rrgbound = np.argwhere(abs(self.wavelength - self.wavelength[self.split_point_br-1])<0.000001)[1][0]
             overlap_flux_b = sightline.flux[blfbound:self.split_point_br]
             overlap_flux_r = sightline.flux[self.split_point_br:rrgbound+1]
             overlap_error_b = sightline.error[blfbound:self.split_point_br]

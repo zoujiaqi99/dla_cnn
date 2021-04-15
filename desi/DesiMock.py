@@ -41,18 +41,19 @@ class DesiMock:
         self.wavelength,self.data(contained all information we need),self.split_point_br,self.split_point_rz,self.data_size
         """
         spec = fits.open(spec_path)
-        truth = fits.open(truth_path)
+        #truth = fits.open(truth_path)
         zbest = fits.open(zbest_path)
 
         # spec[2].data ,spec[7].data and spec[12].data are the wavelength data for the b, r and z cameras.
         self.wavelength = np.hstack((spec[2].data.copy(), spec[7].data.copy(), spec[12].data.copy()))
         self.data_size = len(self.wavelength)
 
-        dlas_data_all = truth[3].data[truth[3].data.copy()['NHI']>19.3]
-        dlas_data=dlas_data_all[(dlas_data_all.copy()['Z_DLA']+1)*1215.67>3600]
+        #dlas_data_all = truth[3].data[truth[3].data.copy()['NHI']>19.3]
+        #dlas_data=dlas_data_all[(dlas_data_all.copy()['Z_DLA']+1)*1215.67>3600]
         #dlas_data = truth[3].data[truth[3].data.copy()['NHI']>19.3]
-        spec_dlas = {}
+        #spec_dlas = {}
         # item[2] is the spec_id, item[3] is the dla_id, and item[0] is NHI, item[1] is z_qso
+        '''
         for item in dlas_data:
             if item[2] not in spec_dlas:
                 spec_dlas[item[2]] = [Dla((item[1]+1)*1215.6701, item[0], '00'+str(item[3]-item[2]*1000))]
@@ -62,6 +63,7 @@ class DesiMock:
         test = np.array([True if item in dlas_data['TARGETID'] else False for item in spec[1].data['TARGETID'].copy()])
         for item in spec[1].data['TARGETID'].copy()[~test]:
             spec_dlas[item] = []
+        '''
 
         # read data from the fits file above, one can directly get those varibles meanings by their names.
         spec_id = spec[1].data['TARGETID'].copy()
@@ -76,10 +78,11 @@ class DesiMock:
         self.split_point_br = flux_b.shape[1]
         self.split_point_rz = flux_b.shape[1]+flux_r.shape[1]
         z_qso = zbest[1].data['Z'].copy()
+        spectype=zbest[1].data['SPECTYPE'].copy()
         ra = spec[1].data['TARGET_RA'].copy()
         dec = spec[1].data['TARGET_DEC'].copy()
 
-        self.data = {spec_id[i]:{'FLUX':flux[i],'ERROR': error[i], 'z_qso':z_qso[i] , 'RA': ra[i], 'DEC':dec[i], 'DLAS':spec_dlas[spec_id[i]]} for i in range(len(spec_id))}
+        self.data = {spec_id[i]:{'FLUX':flux[i],'ERROR': error[i], 'z_qso':z_qso[i] , 'RA': ra[i], 'DEC':dec[i], 'spectype':spectype[i]} for i in range(len(spec_id))}
 
     def get_sightline(self, id, camera = 'all', rebin=False, normalize=False):
         """

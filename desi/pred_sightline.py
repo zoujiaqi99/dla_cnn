@@ -99,7 +99,7 @@ def label_catalog(real_catalog,pred_catalog,realname=None,predname=None):
                 fp_num=fp_num+1
     
     real_catalog.write(realname,overwrite=True)
-    pred_catalog.write(dlaname,overwrite=True)
+    pred_catalog.write(predname,overwrite=True)
     return tp_pred, fn_num, fp_num
 
 def get_results(real_catalog,pred_catalog,realname=None,predname=None,path=None):

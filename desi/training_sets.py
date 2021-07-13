@@ -20,7 +20,7 @@ from dla_cnn.spectra_utils import get_lam_data
 from dla_cnn.training_set import select_samples_50p_pos_neg
 from dla_cnn.desi.defs import REST_RANGE,kernel,best_v
 
-def pad_sightline(sightline, lam, lam_rest, ix_dla_range,kernelrangepx,v=best_v['b']):
+def pad_sightline(sightline, lam, lam_rest, ix_dla_range,kernelrangepx,v=best_v['all']):
     c = 2.9979246e8
     dlnlambda = np.log(1+v/c)
     #pad left side
@@ -46,7 +46,7 @@ def pad_sightline(sightline, lam, lam_rest, ix_dla_range,kernelrangepx,v=best_v[
     return flux_padded,lam_padded,pixel_num_left
     
     
-def split_sightline_into_samples(sightline, REST_RANGE=REST_RANGE, kernel=kernel):
+def split_sightline_into_samples(sightline, REST_RANGE=REST_RANGE, kernel=kernel, v=best_v['all']):
     """
     Split the sightline into a series of snippets, each with length kernel
 
@@ -64,7 +64,7 @@ def split_sightline_into_samples(sightline, REST_RANGE=REST_RANGE, kernel=kernel
     kernelrangepx = int(kernel/2) #200
     #samplerangepx = int(kernel*pos_sample_kernel_percent/2) #60
     #padding the sightline:
-    flux_padded,lam_padded,pixel_num_left=pad_sightline(sightline,lam,lam_rest,ix_dla_range,kernelrangepx,v=best_v['b'])
+    flux_padded,lam_padded,pixel_num_left=pad_sightline(sightline,lam,lam_rest,ix_dla_range,kernelrangepx,v=v)
      
     #ix_dlas = [(np.abs(lam[ix_dla_range]-dla.central_wavelength).argmin()) for dla in sightline.dlas]
     #coldensity_dlas = [dla.col_density for dla in sightline.dlas]       # column densities matching ix_dlas

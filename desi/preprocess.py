@@ -49,7 +49,7 @@ def label_sightline(sightline, kernel=kernel, REST_RANGE=REST_RANGE, pos_sample_
     ix_dlas=[]
     coldensity_dlas=[]
     for dla in sightline.dlas:
-        if (900<(dla.central_wavelength/(1+sightline.z_qso))<1346):#&(dla.central_wavelength>=3700):
+        if (900<(dla.central_wavelength/(1+sightline.z_qso))<1346)&(dla.central_wavelength>=3570):#3570 for mock, 3600 for sv
             ix_dlas.append(np.abs(lam[ix_dla_range]-dla.central_wavelength).argmin()) 
             coldensity_dlas.append(dla.col_density)    # column densities matching ix_dlas
 
@@ -225,6 +225,7 @@ def estimate_s2n(sightline):
     s2n = sightline.flux/sightline.error
     #return s/n
     return np.median(s2n[test])
+##need to be discussed
 def estimate_dla_s2n(sightline):
     """
     Estimate the s/n of every DLA, using the lymann forest part and excluding dlas.

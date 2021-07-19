@@ -14,7 +14,7 @@ If you want to use our trained model to predict the sightlines：
 
 ```
 from dla.cnn.desi.get_sightline import get_sightlines
-sightlines=get_sightlines(input='xxxx',output='xxxx')
+sightlines=get_sightlines(input='MOCK_spectra/desi-0.2-100/spectra-16',output='MOCK_spectra/processed/pre_sightlines.npy')
 ```
 This module use mock spectra in `input = 'MOCK_spectra/desi-0.2-100/spectra-16'` and produce a npy file  in `output = 'MOCK_spectra/processed/pre_sightlines.npy'`.
 
@@ -50,7 +50,7 @@ from dla_cnn.desi import defs
 REST_RANGE = defs.REST_RANGE
 smooth_kernel= defs.smooth_kernel
 best_v = defs.best_v
-sightlines=np.load('MOCK_spectra/processed/pre_sightlines.npy)
+sightlines=np.load('MOCK_spectra/processed/pre_sightlines.npy', allow_pickle=True)
 make_smoothdatasets(sightlines,kernel=smooth_kernel, REST_RANGE=REST_RANGE, v=best_v['all'], output='MOCK_spectra/processed/datasets.npy', validate=True)
 ```
 Using those two module you can produce a npy file  in `MOCK_spectra/processed/datasets.npy` for different S/N spectra.
@@ -82,7 +82,7 @@ python dla_cnn/training_model/get_partpredicition.py
 ```
 The input spectra file is located in line 182, and line 185 lists the ckpt model file we saved during training.
 
-This module will produce a npy file in the `MOCK_spectra/processed` directory containing pred, conf, offset, and col_density arrays for every window. These data will be used to get whole sightline predictions next.
+This module will produce a npy file in the `MOCK_spectra/processed/partpre.npy` directory containing pred, conf, offset, and col_density arrays for every window. These data will be used to get whole sightline predictions next.
 
 ## Prediction for sightlines
 
@@ -94,6 +94,8 @@ if the confidence level > 0.5, the pred for the window will be 1, if the offset 
 ```
 from dla_cnn.desi.pred_sightline import get_results,save_pred
 from dla_cnn.desi.dla_catalog import catalog_fits
+sightlines=np.load('MOCK_spectra/processed/pre_sightlines.npy', allow_pickle=True)
+preds=np.load('MOCK_spectra/processed/partpre.npy',allow_pickle=True).item()
 #get absorber list for each sightline
 pred_catalog=save_pred(sightlines,preds,level2,level1,filename='Mock_spectra/processed/pred_dla_catalog.fits')
 #compare prediction with real absorbers,generate NHI,z hist and calculate confusion matrix

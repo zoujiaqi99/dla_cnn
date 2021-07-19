@@ -14,35 +14,56 @@ If you want to use our trained model to predict the sightlines：
 
 ```
 from dla.cnn.desi.get_sightline import get_sightlines
-get_sightlines(path='desi-0.2-100/spectra-16')
+sightlines=get_sightlines(input='xxxx',output='xxxx')
 ```
+This module use mock spectra in `input = 'MOCK_spectra/desi-0.2-100/spectra-16'` and produce a npy file  in `output = 'MOCK_spectra/processed/pre_sightlines.npy'`.
+
 In this module, we iterate through all the fits files in the path, use the `desi/DesiMock` class to read spectra and perform pre-processing work such as rebinning, normalizing, and calculating the signal-to-noise ratio(S/N), then store the pre-processed spectra data into the `data_model/Sighline` class. Here lists the filters to spectra:
 
 * spectra with z<2.33 are filtered
 * spectra with S/N <1 are filtered
 * only use the blue band in this sightline
 
-This module will produce a npy file  in `MOCK_spectra/processed/pre_sightlines.npy`
+Based on the dataset we want to generate, these filters can be changed.
 
 PS: If you want to retrain the CNN model on your own, you may want to insert DLAs into sightlines. See `dla_cnn.desi.insert_dlas`, after preprocessing the sightlines, you can use the `insert_dlas` module to generate sightlines for training with NHI distribution you want. 
 
 ## Generate input datasets
-The next step is to use preprocessed sightlines to generate datasets as input to the CNN model. The input to the model is a sliding window of the sightline.
+The next step is to use preprocessed sightlines to generate datasets as input to the CNN model. The input to the model is a sliding window of the sightline. For sightlines with S/N > 3, we use `make_datasets` module:
 ```
 from dla_cnn.desi.dataset import make_datasets
-make_datasets(pre_sightlines,validate=True)
+from dla_cnn.desi import defs
+REST_RANGE = defs.REST_RANGE
+kernel = defs.kernel
+best_v = defs.best_v
+sightlines=np.load('MOCK_spectra/processed/pre_sightlines.npy)
+make_datasets(sightlines, kernel=kernel, REST_RANGE=REST_RANGE, v=best_v['all'],output='MOCK_spectra/processed/datasets.npy', validate=True)
 ```
-It is worth noting that spectra with different S/N using different processing codes. For sightlines with S/N > 4, we only split sightlines into samples and input one-dimensional flux array into the model trained with high S/N sightlines. While for sightlines with S/N<4, we use three median filters to smooth flux and input four-dimensional flux matrix into the model trained with low S/N sightlines.
+The `kernel` sets the size of window, for S/N > 3, we set `defs.kernel=400`.  
+The `REST_RANGE` represents the rest wavelength coverage when input to the CNN model, the default value is `defs.REST_RANGE=[900,1346]`
+The `v` represents the velocity we choose to rebin the sightline. We calculated and saved in `desi/def.py` for different bands.
 
-This module will produce a npy file  in `MOCK_spectra/processed/input_datasets.npy`
+It is worth noting that spectra with different S/N using different processing codes. For sightlines with S/N > 3, we only split sightlines into samples and input one-dimensional flux array into the model trained with high S/N sightlines. While for sightlines with S/N<3, we use three median filters to smooth flux and input four-dimensional flux matrix into the model trained with low S/N sightlines.The datasets can be generated from `make_smoothdatasets`:
+```
+from dla_cnn.desi.dataset import make_datasets
+from dla_cnn.desi import defs
+REST_RANGE = defs.REST_RANGE
+smooth_kernel= defs.smooth_kernel
+best_v = defs.best_v
+sightlines=np.load('MOCK_spectra/processed/pre_sightlines.npy)
+make_smoothdatasets(sightlines,kernel=smooth_kernel, REST_RANGE=REST_RANGE, v=best_v['all'], output='MOCK_spectra/processed/datasets.npy', validate=True)
+```
+Using those two module you can produce a npy file  in `MOCK_spectra/processed/datasets.npy` for different S/N spectra.
 
 PS: 
-If you want to retrain the CNN model by your own, you can use `make_datasets` to generate your training sets and test sets:
+If you want to retrain the CNN model by your own, you can also use `make_datasets` to generate your training sets and test sets:
 ```
 testnub=len(train_sightlines)//8
-testingset=make_datasets(train_sightlines[0:testnub],validate=False)
-trainingset=make_datasets(train_sightlines[testnub:-1],validate=False)
+testingset=make_datasets(train_sightlines[0:testnub],kernel=kernel, REST_RANGE=REST_RANGE, v=best_v['all'],output='MOCK_spectra/processed/testingset.npy', validate=False)
+trainingset=make_datasets(train_sightlines[testnub:-1],kernel=kernel, REST_RANGE=REST_RANGE, v=best_v['all'],output='MOCK_spectra/processed/trainingdatasets.npy', validate=False)
 ```
+Same method for sightlines with S/N<3 to generate training sets and test sets. 
+
 Then using the training set and test set to train the CNN model using `dla_cnn/training_model/training.py`
 ```
 python training.py -i 1000000 -r 'traingset.npy' -e 'testset.npy' -c 'trainingmode/current' -t 600 -m 4
@@ -52,6 +73,7 @@ python training.py -i 1000000 -r 'traingset.npy' -e 'testset.npy' -c 'trainingmo
 #result : print training accuracy every 200 steps , print test accuracy every 5000 steps (classification accuracy)
 ```
 This module will save the model file in the `trainingmode/current` directory.
+
 ## Predictions for windows
 
 The third step is to get predictions for the input datasets using CNN model corresponding to the S/N.

@@ -5,7 +5,7 @@ from dla_cnn.desi.defs import best_v
 import numpy as np
 import os
 from os.path import join
-def get_sightlines(path='/desi-0.2-100/spectra-16'):
+def get_sightlines(input='/desi-0.2-100/spectra-16', output='MOCK_spectra/processed/pre_sightlines.npy'):
     """
     Insert DLAs manually into sightlines without DLAs or only choose sightlines with DLAs
     
@@ -40,5 +40,5 @@ def get_sightlines(path='/desi-0.2-100/spectra-16'):
                         rebin(sightline, best_v['b'])
                         sightlines.append(sightline)
                 
-    np.save('MOCK_spectra/processed/pre_sightlines.npy')
+    np.save(output,sightlines)
     return sightlines

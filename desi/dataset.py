@@ -35,8 +35,8 @@ def make_datasets(sightlines, kernel=kernel, REST_RANGE=REST_RANGE, v=best_v['al
             labels_classifier=np.hstack([data_split[1]])
             labels_offset=np.hstack([data_split[2]])
             col_density=np.hstack([data_split[3]])
-            lam=np.vstack([data_split[4]])
-            dataset[sightline.id]={'FLUX':flux,'lam':lam,'labels_classifier':  labels_classifier, 'labels_offset':labels_offset , 'col_density': col_density,'wavelength_dlas':wavelength_dlas,'coldensity_dlas':coldensity_dlas} 
+            lam=np.vstack([data_split[4]])#no need lam
+            dataset[sightline.id]={'FLUX':flux,'labels_classifier':  labels_classifier, 'labels_offset':labels_offset , 'col_density': col_density,'wavelength_dlas':wavelength_dlas,'coldensity_dlas':coldensity_dlas} 
         else:
             sample_masks=select_samples_50p_pos_neg(sightline,kernel=kernel)
             if sample_masks !=[]:

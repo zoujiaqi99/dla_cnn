@@ -7,7 +7,7 @@ import os
 from os.path import join
 def get_sightlines(input='/desi-0.2-100/spectra-16', output='MOCK_spectra/processed/pre_sightlines.npy'):
     """
-    Insert DLAs manually into sightlines without DLAs or only choose sightlines with DLAs
+   Read fits file and preprocess the sightlines
     
     Return
     ---------
